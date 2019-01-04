@@ -18,9 +18,9 @@ namespace FaceCheckIn_App
         private const string APP_ID = "14489880";
         private const string API_KEY = "8Sr9u9XYkRPcA62wL02aC43V";
         private const string SECRET_KEY = "i0QtdyawLje2mZEV9kWU5dbQqw8Y76ob";
-        
+
         private static Tts _ttsClient = new Tts(API_KEY, SECRET_KEY) { Timeout = 6000 };
-        
+
         /// <summary>
         /// 语音合成
         /// </summary>
@@ -31,9 +31,20 @@ namespace FaceCheckIn_App
         {
             try
             {
+                if (option == null)
+                {
+                    // 可选参数
+                    option = new Dictionary<string, object>()
+                    {
+                        {"spd", 5}, // 语速
+                        {"vol", 7}, // 音量
+                        {"per", 4}  // 发音人，4：情感度丫丫童声
+                    };
+                }
+
                 var result = _ttsClient.Synthesis(content, option);
 
-                if (result.ErrorCode == 0) 
+                if (result.ErrorCode == 0)
                 {
                     File.WriteAllBytes("temp.mp3", result.Data);
                     PlaySpeech("temp.mp3");
@@ -62,7 +73,7 @@ namespace FaceCheckIn_App
             // 关闭音频文件
             mciSendString("close temp_alias", null, 0, IntPtr.Zero);
         }
-        
+
 
     }
 }

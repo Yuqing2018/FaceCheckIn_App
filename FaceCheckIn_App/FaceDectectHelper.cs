@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace FaceCheckIn_App
@@ -29,7 +30,6 @@ namespace FaceCheckIn_App
         public static String DetectDemo(string image)
         {
             String Result = String.Empty;
-
             try
             {
                 var imageType = "BASE64";
@@ -43,7 +43,7 @@ namespace FaceCheckIn_App
 
                 var jresult = _faceClient.Detect(image, imageType, options);
 
-                if (jresult["error_code"].ToString() != "0" &&!String.IsNullOrEmpty(jresult["error_msg"].ToString()))
+                if (jresult["error_code"].ToString() != "0" && !String.IsNullOrEmpty(jresult["error_msg"].ToString()))
                     return jresult["error_msg"].ToString();
 
                 FaceDectectResult faceResult = JsonConvert.DeserializeObject<FaceDectectResult>(jresult["result"].ToString());
@@ -129,6 +129,13 @@ namespace FaceCheckIn_App
             try
             {
                 var jresult = _faceClient.FaceGetlist(userId, groupId);
+
+                if (jresult["error_code"].ToString() != "0" && !String.IsNullOrEmpty(jresult["error_msg"].ToString()))
+                {
+                    MessageBox.Show(jresult["error_msg"].ToString(), "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return null;
+                }
+
                 var faceList = jresult["result"]["face_list"].ToString();
 
                 userFaces = JsonConvert.DeserializeObject<List<FaceListItem>>(faceList);
@@ -144,6 +151,73 @@ namespace FaceCheckIn_App
             return userFaces;
         }
 
+        public static List<FaceSearch> GetAllUserList()
+        {
+            List<FaceSearch> userinfolist = new List<FaceSearch>();
+            try
+            {
+                var jresult = FaceDectectHelper.GetGroupList();
+                var groupList = JsonConvert.DeserializeObject<List<string>>(jresult["result"]["group_id_list"].ToString());
+                groupList.ForEach(groupId =>
+                {
+                    var groupResult = FaceDectectHelper.GroupGetusersDemo(groupId.ToString());
+
+                    if (groupResult["error_code"].ToString() == "0")
+                    {
+                        var users = groupResult["result"]["user_id_list"];
+                        var userList = JsonConvert.DeserializeObject<List<string>>(users.ToString());
+
+                        userList.ForEach(userId =>
+                        {
+                            var userResult = FaceDectectHelper.GetUser(groupId.ToString(), userId.ToString());
+                            var userInfos = JsonConvert.DeserializeObject<List<FaceSearch>>(userResult["result"]["user_list"].ToString());
+                            userInfos.ForEach(user =>
+                            {
+                                user.user_id = userId;
+                            });
+                            userinfolist.AddRange(userInfos);
+                        });
+                    }
+                });
+            }
+            catch (AipException exp)
+            {
+                MessageBox.Show(exp.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (WebException exp)
+            {
+                MessageBox.Show(exp.Message, "网络错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return userinfolist;
+        }
+
+        public static JObject GetGroupList()
+        {
+            // 组列表查询
+            return _faceClient.GroupGetlist(null);
+        }
+        public static JObject GetUser(string groupId, String userId)
+        {
+            return _faceClient.UserGet(userId, groupId);
+
+        }
+        public static JObject DeleteUser(string groupId, string userId)
+        {
+            try
+            {
+                return _faceClient.UserDelete(groupId, userId);
+            }
+            catch (AipException exp)
+            {
+                MessageBox.Show(exp.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch (WebException exp)
+            {
+                MessageBox.Show(exp.Message, "网络错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            return null;
+
+        }
         /// <summary>
         /// 人脸搜索
         /// </summary>
@@ -158,8 +232,9 @@ namespace FaceCheckIn_App
                 //  var image = "取决于image_type参数，传入BASE64字符串或URL字符串或FACE_TOKEN字符串";
 
                 var imageType = "BASE64";
+                var groupList = JsonConvert.DeserializeObject<List<string>>(GetGroupList()["result"]["group_id_list"].ToString());
 
-                var groupIdList = "group1";
+                var groupIdList = String.Join(",", groupList);
 
                 var options = new Dictionary<string, object>{
         {"quality_control", "NORMAL"},
@@ -167,6 +242,13 @@ namespace FaceCheckIn_App
     };
                 // 带参数调用人脸搜索
                 var jresult = _faceClient.Search(image, imageType, groupIdList, options);
+
+                if (jresult["error_code"].ToString() != "0" && !String.IsNullOrEmpty(jresult["error_msg"].ToString()))
+                {
+                    SpeechHelper.Tts(jresult["error_msg"].ToString(), null);
+                    return null;
+                }
+
                 var searchResult = jresult["result"]["user_list"].ToString();
                 Result = JsonConvert.DeserializeObject<List<FaceSearch>>(searchResult).FirstOrDefault();
             }
@@ -212,6 +294,7 @@ namespace FaceCheckIn_App
             }
             return null;
         }
+
     }
     public class LocationInfo
     {

@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using AForge.Video.DirectShow;
+using AForge.Video;
 
 namespace FaceCheckIn_App
 {
@@ -12,6 +11,7 @@ namespace FaceCheckIn_App
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
+
         static void Main()
         {
             Application.EnableVisualStyles();
