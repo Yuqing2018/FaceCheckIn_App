@@ -60,24 +60,25 @@ namespace FaceCheckIn_App
             this.Tab_SignIn = new System.Windows.Forms.TabPage();
             this.delete_btn = new System.Windows.Forms.Button();
             this.users_dataGridView = new System.Windows.Forms.DataGridView();
+            this.Tab_CheckIn = new System.Windows.Forms.TabPage();
+            this.label5 = new System.Windows.Forms.Label();
+            this.CheckResult_rtb = new System.Windows.Forms.RichTextBox();
+            this.ConfirmCheckIn_btn = new System.Windows.Forms.Button();
+            this.videoSourcePlayer_UserCheckIn = new AForge.Controls.VideoSourcePlayer();
+            this.ofdOpenImageFile = new System.Windows.Forms.OpenFileDialog();
+            this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.groupidDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.useridDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.userinfoDataGridViewTextBoxColumn = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.faceSearchBindingSource = new System.Windows.Forms.BindingSource(this.components);
-            this.Tab_CheckIn = new System.Windows.Forms.TabPage();
-            this.label5 = new System.Windows.Forms.Label();
-            this.CheckResult_rtb = new System.Windows.Forms.RichTextBox();
-            this.button2 = new System.Windows.Forms.Button();
-            this.videoSourcePlayer_UserCheckIn = new AForge.Controls.VideoSourcePlayer();
-            this.ofdOpenImageFile = new System.Windows.Forms.OpenFileDialog();
-            this.folderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
             this.UserFace_Page.SuspendLayout();
             this.Tab_User.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pboxImage)).BeginInit();
             this.Tab_SignIn.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.users_dataGridView)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.faceSearchBindingSource)).BeginInit();
             this.Tab_CheckIn.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.faceSearchBindingSource)).BeginInit();
             this.SuspendLayout();
             // 
             // UserFace_Page
@@ -369,38 +370,17 @@ namespace FaceCheckIn_App
             this.userinfoDataGridViewTextBoxColumn});
             this.users_dataGridView.DataSource = this.faceSearchBindingSource;
             this.users_dataGridView.Location = new System.Drawing.Point(6, 107);
+            this.users_dataGridView.MultiSelect = false;
             this.users_dataGridView.Name = "users_dataGridView";
             this.users_dataGridView.RowTemplate.Height = 40;
-            this.users_dataGridView.Size = new System.Drawing.Size(1437, 1138);
+            this.users_dataGridView.Size = new System.Drawing.Size(1747, 1106);
             this.users_dataGridView.TabIndex = 0;
-            // 
-            // groupidDataGridViewTextBoxColumn
-            // 
-            this.groupidDataGridViewTextBoxColumn.DataPropertyName = "group_id";
-            this.groupidDataGridViewTextBoxColumn.HeaderText = "用户组Id";
-            this.groupidDataGridViewTextBoxColumn.Name = "groupidDataGridViewTextBoxColumn";
-            // 
-            // useridDataGridViewTextBoxColumn
-            // 
-            this.useridDataGridViewTextBoxColumn.DataPropertyName = "user_id";
-            this.useridDataGridViewTextBoxColumn.HeaderText = "用户Id";
-            this.useridDataGridViewTextBoxColumn.Name = "useridDataGridViewTextBoxColumn";
-            // 
-            // userinfoDataGridViewTextBoxColumn
-            // 
-            this.userinfoDataGridViewTextBoxColumn.DataPropertyName = "user_info";
-            this.userinfoDataGridViewTextBoxColumn.HeaderText = "用户名称";
-            this.userinfoDataGridViewTextBoxColumn.Name = "userinfoDataGridViewTextBoxColumn";
-            // 
-            // faceSearchBindingSource
-            // 
-            this.faceSearchBindingSource.DataSource = typeof(FaceCheckIn_App.FaceSearch);
             // 
             // Tab_CheckIn
             // 
             this.Tab_CheckIn.Controls.Add(this.label5);
             this.Tab_CheckIn.Controls.Add(this.CheckResult_rtb);
-            this.Tab_CheckIn.Controls.Add(this.button2);
+            this.Tab_CheckIn.Controls.Add(this.ConfirmCheckIn_btn);
             this.Tab_CheckIn.Controls.Add(this.videoSourcePlayer_UserCheckIn);
             this.Tab_CheckIn.Location = new System.Drawing.Point(10, 48);
             this.Tab_CheckIn.Name = "Tab_CheckIn";
@@ -431,16 +411,16 @@ namespace FaceCheckIn_App
             this.CheckResult_rtb.TabIndex = 2;
             this.CheckResult_rtb.Text = "";
             // 
-            // button2
+            // ConfirmCheckIn_btn
             // 
-            this.button2.Location = new System.Drawing.Point(386, 1114);
-            this.button2.Margin = new System.Windows.Forms.Padding(8);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(200, 59);
-            this.button2.TabIndex = 1;
-            this.button2.Text = "确认签到";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            this.ConfirmCheckIn_btn.Location = new System.Drawing.Point(386, 1114);
+            this.ConfirmCheckIn_btn.Margin = new System.Windows.Forms.Padding(8);
+            this.ConfirmCheckIn_btn.Name = "ConfirmCheckIn_btn";
+            this.ConfirmCheckIn_btn.Size = new System.Drawing.Size(200, 59);
+            this.ConfirmCheckIn_btn.TabIndex = 1;
+            this.ConfirmCheckIn_btn.Text = "确认签到";
+            this.ConfirmCheckIn_btn.UseVisualStyleBackColor = true;
+            this.ConfirmCheckIn_btn.Click += new System.EventHandler(this.ConfirmCheckIn_btn_Click);
             // 
             // videoSourcePlayer_UserCheckIn
             // 
@@ -456,15 +436,38 @@ namespace FaceCheckIn_App
             // 
             this.ofdOpenImageFile.FileName = "ofdOpenImageFile";
             // 
+            // groupidDataGridViewTextBoxColumn
+            // 
+            this.groupidDataGridViewTextBoxColumn.DataPropertyName = "group_id";
+            this.groupidDataGridViewTextBoxColumn.HeaderText = "用户组Id";
+            this.groupidDataGridViewTextBoxColumn.Name = "groupidDataGridViewTextBoxColumn";
+            // 
+            // useridDataGridViewTextBoxColumn
+            // 
+            this.useridDataGridViewTextBoxColumn.DataPropertyName = "user_id";
+            this.useridDataGridViewTextBoxColumn.HeaderText = "用户Id";
+            this.useridDataGridViewTextBoxColumn.Name = "useridDataGridViewTextBoxColumn";
+            // 
+            // userinfoDataGridViewTextBoxColumn
+            // 
+            this.userinfoDataGridViewTextBoxColumn.DataPropertyName = "user_info";
+            this.userinfoDataGridViewTextBoxColumn.HeaderText = "用户名称";
+            this.userinfoDataGridViewTextBoxColumn.Name = "userinfoDataGridViewTextBoxColumn";
+            // 
+            // faceSearchBindingSource
+            // 
+            this.faceSearchBindingSource.DataSource = typeof(FaceCheckIn_App.FaceSearch);
+            // 
             // HomeForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(16F, 31F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
-            this.ClientSize = new System.Drawing.Size(2006, 1347);
+            this.ClientSize = new System.Drawing.Size(2037, 1464);
             this.Controls.Add(this.UserFace_Page);
             this.Name = "HomeForm";
             this.Text = "HomeForm";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.HomeForm_FormClosed);
             this.Load += new System.EventHandler(this.HomeForm_Load);
             this.UserFace_Page.ResumeLayout(false);
             this.Tab_User.ResumeLayout(false);
@@ -472,9 +475,9 @@ namespace FaceCheckIn_App
             ((System.ComponentModel.ISupportInitialize)(this.pboxImage)).EndInit();
             this.Tab_SignIn.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.users_dataGridView)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.faceSearchBindingSource)).EndInit();
             this.Tab_CheckIn.ResumeLayout(false);
             this.Tab_CheckIn.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.faceSearchBindingSource)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -508,7 +511,7 @@ namespace FaceCheckIn_App
         private System.Windows.Forms.OpenFileDialog ofdOpenImageFile;
         private System.Windows.Forms.ImageList imageLists;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button ConfirmCheckIn_btn;
         private AForge.Controls.VideoSourcePlayer videoSourcePlayer_UserCheckIn;
         private AForge.Controls.VideoSourcePlayer videoSourcePlayer_UserSignIn;
         private System.Windows.Forms.Button ScratchPicture_btn;
@@ -520,5 +523,6 @@ namespace FaceCheckIn_App
         private System.Windows.Forms.DataGridViewTextBoxColumn groupidDataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn useridDataGridViewTextBoxColumn;
         private System.Windows.Forms.DataGridViewTextBoxColumn userinfoDataGridViewTextBoxColumn;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }

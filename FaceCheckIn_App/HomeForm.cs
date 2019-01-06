@@ -1,4 +1,5 @@
-﻿using AForge.Video.DirectShow;
+﻿using AForge.Controls;
+using AForge.Video.DirectShow;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -18,6 +19,7 @@ namespace FaceCheckIn_App
         public List<FaceSearch> Userinfolist { get; set; }
 
         //设置摄像头获取配置
+        public VideoSourcePlayer CurrentVideoSourcePlayer { get; set; }
         FilterInfoCollection videoDevices;
         VideoCaptureDevice videoSource;
         public int selectedDeviceIndex = 0;
@@ -26,30 +28,18 @@ namespace FaceCheckIn_App
         {
             InitializeComponent();
             Control.CheckForIllegalCrossThreadCalls = false;
+
             videoDevices = new FilterInfoCollection(FilterCategory.VideoInputDevice);
+
+            if (videoDevices?.Count == 0)
+                MessageBox.Show("没有可用摄像头!");
+
             if (Userinfolist == null)
             {
                 Userinfolist = new List<FaceSearch>();
             }
 
             users_dataGridView.DataSource = Userinfolist;
-        }
-
-        //创建一个委托，是为访问DataGridView控件服务的。
-        public delegate void UpdateDataGrid();
-        //定义一个委托变量
-        public UpdateDataGrid UpdateGrid;
-
-        //修改DataGridView值的方法。
-        public void UpdateDataGridMethod()
-        {
-            var Userinfolist = FaceDectectHelper.GetAllUserList();
-            users_dataGridView.DataSource = Userinfolist;
-        }
-        //此为在非创建线程中的调用方法，其实是使用Invoke方法。
-        public void ThreadMethoddataGridView()
-        {
-            this.BeginInvoke(UpdateGrid);
         }
 
         //创建一个委托，是为访问DataGridView控件服务的。
@@ -70,7 +60,6 @@ namespace FaceCheckIn_App
                     string fileName = String.Format("tempPict_{0}.jpg", DateTime.Now.ToString("yyyyMMddHHmmssfff"));
                     img.Save(fileName);
                 }
-
             }
 
             bitmap.Dispose();
@@ -166,6 +155,11 @@ namespace FaceCheckIn_App
 
                 var image = Convert.ToBase64String(imageBytes);
                 var jresult = FaceDectectHelper.UserAddDemo(image, groupId, userId, options);
+
+                if (jresult != null && !String.IsNullOrEmpty(jresult.face_token))
+                {
+                    Userinfolist.Add(new FaceSearch() { group_id = groupId, user_id = userId, user_info = userName });
+                }
             }
             MessageBox.Show("注册成功！");
         }
@@ -256,76 +250,78 @@ namespace FaceCheckIn_App
         //打开摄像头
         private void activeCamara_btn_Click(object sender, EventArgs e)
         {
-            if (videoSource != null && videoSource.IsRunning)
+            if (videoDevices?.Count == 0)
+                return;
+            if (CurrentVideoSourcePlayer != null && CurrentVideoSourcePlayer.IsRunning)
             {
-                videoSource.SignalToStop();
-                videoSource.WaitForStop();
+                CurrentVideoSourcePlayer.SignalToStop();
+                CurrentVideoSourcePlayer.WaitForStop();
                 videoSource = null;
             }
-            videoSource = new VideoCaptureDevice(videoDevices[selectedDeviceIndex].MonikerString);//连接摄像头。
-            videoSource.VideoResolution = videoSource.VideoCapabilities[selectedDeviceIndex];
             switch (UserFace_Page.SelectedIndex)
             {
                 case 0:
-                    videoSourcePlayer_UserSignIn.VideoSource = videoSource;
-                    videoSourcePlayer_UserSignIn.Start();
+                    CurrentVideoSourcePlayer = videoSourcePlayer_UserSignIn;
                     break;
                 case 2:
-                    videoSourcePlayer_UserCheckIn.VideoSource = videoSource;
-                    videoSourcePlayer_UserCheckIn.Start();
+                    CurrentVideoSourcePlayer = videoSourcePlayer_UserCheckIn;
                     break;
             }
+            
+            videoSource = new VideoCaptureDevice(videoDevices[selectedDeviceIndex].MonikerString);//连接摄像头。
+            videoSource.VideoResolution = videoSource.VideoCapabilities[selectedDeviceIndex];
+            CurrentVideoSourcePlayer.VideoSource = videoSource;
+            CurrentVideoSourcePlayer.Start();
         }
 
-        //用户签到
-        private void button2_Click(object sender, EventArgs e)
+        //用户确认签到
+        private void ConfirmCheckIn_btn_Click(object sender, EventArgs e)
         {
             if (videoSource == null)
                 return;
-            if (!videoSourcePlayer_UserCheckIn.IsRunning)
-                return;
-            Thread objThread = new Thread(new ThreadStart(delegate
+
+            if (CurrentVideoSourcePlayer.Name == "videoSourcePlayer_UserCheckIn" && CurrentVideoSourcePlayer.IsRunning)
             {
-                ThreadMethodUserCheckIn();
-                //Bitmap bitmap = videoSourcePlayer_UserCheckIn.GetCurrentVideoFrame();
-
-                //using (var m = new MemoryStream())
+                //Thread objThread = new Thread(new ThreadStart(delegate
                 //{
-                //    bitmap.Save(m, ImageFormat.Jpeg);
-                //    var flag = UserCheckIn(m.ToArray());
-                //    if (!flag)
-                //    {
-                //        var img = Image.FromStream(m);
-                //        string fileName = String.Format("tempPict_{0}.jpg", DateTime.Now.ToString("yyyyMMddHHmmssfff"));
-                //        img.Save(fileName);
-                //    }
+                //    ThreadMethodUserCheckIn();
+                //}));
 
-                //}
+                //objThread.Start();
+                Bitmap bitmap = CurrentVideoSourcePlayer.GetCurrentVideoFrame();
 
-                //bitmap.Dispose();
-            }));
+                using (var m = new MemoryStream())
+                {
+                    bitmap.Save(m, ImageFormat.Jpeg);
+                    var flag = UserCheckIn(m.ToArray());
+                    if (!flag)
+                    {
+                        var img = Image.FromStream(m);
+                        string fileName = String.Format("tempPict_{0}.jpg", DateTime.Now.ToString("yyyyMMddHHmmssfff"));
+                        img.Save(fileName);
+                    }
+                }
 
-            objThread.Start();
-
+                bitmap.Dispose();
+            }
         }
         private void UserFace_Page_SelectedIndexChanged(object sender, EventArgs e)
         {
-            foreach (TabPage tab in UserFace_Page.TabPages)
-            {
-                if (UserFace_Page.SelectedIndex != tab.TabIndex)
-                {
-                    tab.Hide();
-                }
-                else
-                {
-                    tab.Show();
-                }
-            }
+            //foreach (TabPage tab in UserFace_Page.TabPages)
+            //{
+            //    if (UserFace_Page.SelectedIndex != tab.TabIndex)
+            //    {
+            //        tab.Hide();
+            //    }
+            //    else
+            //    {
+            //        tab.Show();
+            //    }
+            //}
 
             switch (UserFace_Page.SelectedIndex)
             {
                 case 1:
-                    Userinfolist = FaceDectectHelper.GetAllUserList();
                     users_dataGridView.DataSource = Userinfolist;
                     break;
                 case 2:
@@ -339,23 +335,11 @@ namespace FaceCheckIn_App
         {
             if (videoSource == null)
                 return;
+            if (CurrentVideoSourcePlayer == null || !CurrentVideoSourcePlayer.IsRunning)
+                return;
 
-            Bitmap bitmap = null;
-            switch (UserFace_Page.SelectedIndex)
-            {
-                case 0:
-                    if (videoSourcePlayer_UserSignIn.IsRunning)
-                    {
-                        bitmap = videoSourcePlayer_UserSignIn.GetCurrentVideoFrame();
-                    }
-                    break;
-                case 2:
-                    if (videoSourcePlayer_UserCheckIn.IsRunning)
-                    {
-                        bitmap = videoSourcePlayer_UserCheckIn.GetCurrentVideoFrame();
-                    }
-                    break;
-            }
+            Bitmap bitmap = CurrentVideoSourcePlayer.GetCurrentVideoFrame();
+
             string fileName = String.Format("tempPict_{0}.jpg", DateTime.Now.ToString("yyyyMMddHHmmssfff"));
 
             using (var m = new MemoryStream())
@@ -378,31 +362,70 @@ namespace FaceCheckIn_App
             }
 
             bitmap.Dispose();
+
         }
 
         private void delete_btn_Click(object sender, EventArgs e)
         {
             var flag = false;
+            List<FaceSearch> list = new List<FaceSearch>();
+            list.AddRange(Userinfolist.Select(x => new FaceSearch(x)));
             foreach (DataGridViewRow row in users_dataGridView.SelectedRows)
             {
-                var user = row.DataBoundItem as FaceSearch;
-                var jresult = FaceDectectHelper.DeleteUser(user.group_id, user.user_id);
+                var deleteUser = row.DataBoundItem as FaceSearch;
+
+                var jresult = FaceDectectHelper.DeleteUser(deleteUser.group_id, deleteUser.user_id);
                 if (jresult["error_code"].ToString() == "0")
+                {
                     flag = true;
+                    list.Remove(deleteUser);
+                }
             }
 
             if (flag)
             {
-                Userinfolist = FaceDectectHelper.GetAllUserList();
-                users_dataGridView.DataSource = Userinfolist;
+                users_dataGridView.DataSource = list;
             }
         }
 
         private void HomeForm_Load(object sender, EventArgs e)
         {
-            //实例化委托
-            //UpdateGrid = new UpdateDataGrid(UpdateDataGridMethod);
-            UserCheck = new UserCheckInDelegate(UserCheckInMethod);
+            // Get user info
+            Userinfolist = FaceDectectHelper.GetAllUserList();
+            //refresh token per 5s
+            //var _timer = new System.Timers.Timer(5 * 1000);
+            //_timer.Elapsed += delegate
+            //{
+            //    Userinfolist = FaceDectectHelper.GetAllUserList();
+            //};
+
+            //_timer.Start();
+            Thread objThread = new Thread(new ThreadStart(delegate
+            {
+                while (true)
+                {
+                    var result = FaceDectectHelper.GetAllUserList();
+                    if (result?.Count > 0)
+                        Userinfolist = result;
+                }
+            }));
+
+            objThread.Start();
+            //实例化委托 没作用
+            //UserCheck = new UserCheckInDelegate(UserCheckInMethod);
+        }
+
+        private void DisConnect()
+        {
+            if (CurrentVideoSourcePlayer!= null)
+            {
+                CurrentVideoSourcePlayer.SignalToStop();
+                CurrentVideoSourcePlayer.WaitForStop();
+            }
+        }
+        private void HomeForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            DisConnect();
         }
     }
 }

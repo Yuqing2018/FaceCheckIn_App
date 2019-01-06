@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -154,31 +155,56 @@ namespace FaceCheckIn_App
         public static List<FaceSearch> GetAllUserList()
         {
             List<FaceSearch> userinfolist = new List<FaceSearch>();
+
+            bool flag = true;
             try
             {
                 var jresult = FaceDectectHelper.GetGroupList();
-                var groupList = JsonConvert.DeserializeObject<List<string>>(jresult["result"]["group_id_list"].ToString());
-                groupList.ForEach(groupId =>
+
+                if (flag && jresult["error_code"].ToString() == "0")
                 {
-                    var groupResult = FaceDectectHelper.GroupGetusersDemo(groupId.ToString());
+                    var groupList = JsonConvert.DeserializeObject<List<string>>(jresult["result"]["group_id_list"].ToString());
 
-                    if (groupResult["error_code"].ToString() == "0")
+                    foreach (var groupId in groupList)
                     {
-                        var users = groupResult["result"]["user_id_list"];
-                        var userList = JsonConvert.DeserializeObject<List<string>>(users.ToString());
+                        var groupResult = GroupGetusersDemo(groupId.ToString());
 
-                        userList.ForEach(userId =>
+                        if (flag && groupResult["error_code"].ToString() == "0")
                         {
-                            var userResult = FaceDectectHelper.GetUser(groupId.ToString(), userId.ToString());
-                            var userInfos = JsonConvert.DeserializeObject<List<FaceSearch>>(userResult["result"]["user_list"].ToString());
-                            userInfos.ForEach(user =>
+                            var users = groupResult["result"]["user_id_list"];
+
+                            var userList = JsonConvert.DeserializeObject<List<string>>(users.ToString());
+
+                            foreach (var userId in userList)
                             {
-                                user.user_id = userId;
-                            });
-                            userinfolist.AddRange(userInfos);
-                        });
+                                Thread.Sleep(1000);
+                                var userResult = GetUser(groupId.ToString(), userId.ToString());
+
+                                if (flag && userResult["error_code"].ToString() == "0")
+                                {
+                                    var userInfos = JsonConvert.DeserializeObject<List<FaceSearch>>(userResult["result"]["user_list"].ToString());
+
+                                    userInfos.ForEach(user =>
+                                    {
+                                        user.user_id = userId;
+                                    });
+
+                                    userinfolist.AddRange(userInfos);
+                                }
+                                else
+                                {
+                                    flag = false;
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            flag = false;
+                            break;
+                        }
                     }
-                });
+                }
             }
             catch (AipException exp)
             {
@@ -342,6 +368,13 @@ namespace FaceCheckIn_App
 
     public class FaceSearch
     {
+        public FaceSearch() { }
+        public FaceSearch(FaceSearch face)
+        {
+            group_id = face.group_id;
+            user_id = face.user_id;
+            user_info = face.user_info;
+        }
         public string group_id { get; set; }
         public string user_id { get; set; }
         public string user_info { get; set; }
